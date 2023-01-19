@@ -1,0 +1,10 @@
+{
+    "editor.fontFamily": "JetBrains Mono Regular",
+    "markdown.preview.fontFamily": "JetBrains Mono Regular",
+    "debug.console.fontFamily": "JetBrains Mono Regular",
+    "scm.inputFontFamily": "JetBrains Mono Regular",
+    "editor.codeLensFontFamily": "JetBrains Mono Regular",
+    "terminal.integrated.fontFamily": "JetBrains Mono Regular",
+    "editor.inlayHints.fontFamily": "JetBrains Mono Regular",
+    "terminal.integrated.fontSize": 10
+}
