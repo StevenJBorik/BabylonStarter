@@ -1,8 +1,12 @@
 import "@babylonjs/core/Debug/debugLayer";
 import "@babylonjs/inspector";
 import "@babylonjs/loaders/glTF";
-import { Engine, Scene, ArcRotateCamera, Vector3, HemisphericLight, Mesh, MeshBuilder, Color4, FreeCamera } from "@babylonjs/core";
+import { Engine, Scene, Vector3, Mesh, Color3, Color4, ShadowGenerator, GlowLayer, PointLight, FreeCamera, CubeTexture, Sound, PostProcess, Effect, SceneLoader, Matrix, MeshBuilder, Quaternion, AssetsManager, ArcRotateCamera, HemisphericLight } from "@babylonjs/core";
+import { PlayerInput } from "./inputController";
+import { Player } from "./characterController";
+import { Hud } from "./ui";
 import { AdvancedDynamicTexture, StackPanel, Button, TextBlock, Rectangle, Control, Image } from "@babylonjs/gui";
+import { Environment } from "./environment";
 
 
 //enum for states
@@ -10,15 +14,30 @@ enum State { START = 0, GAME = 1, LOSE = 2, CUTSCENE = 3 }
 
 class App {
 
-    // General Entire Application
-    private _scene: Scene;
-    private _canvas: HTMLCanvasElement;
-    private _engine: Engine;
-    
-
-    //Scene - related
-    private _state: number = 0;
-    private _cutScene: Scene;
+       // General Entire Application
+       private _scene: Scene;
+       private _canvas: HTMLCanvasElement;
+       private _engine: Engine;
+   
+       //Game State Related
+       public assets;
+       private _input: PlayerInput;
+       private _player: Player;
+       private _ui: Hud;
+       private _environment;
+   
+       //Sounds
+       // public sfx: Sound;
+       public game: Sound;
+       public end: Sound;
+   
+       //Scene - related
+       private _state: number = 0;
+       private _gamescene: Scene;
+       private _cutScene: Scene;
+   
+       //post process
+       private _transition: boolean = false;
 
     constructor() {
       this._canvas = this._createCanvas();
@@ -402,8 +421,79 @@ class App {
         });
     }
 
+    private async _setUpGame(): Promise<void> { 
+        //--CREATE SCENE--
+        let scene = new Scene(this._engine);
+        this._gamescene = scene;
+
+        //--SOUNDS--
+        this._loadSounds(scene);
+
+        //--CREATE ENVIRONMENT--
+        const environment = new Environment(scene);
+        this._environment = environment;
+        //Load environment and character assets
+        await this._environment.load(); //environment
+        await this._loadCharacterAssets(scene); //character   
+    }
+
+    private _loadSounds(scene: Scene): void {
+
+        this.game = new Sound("gameSong", "./sounds/Christmassynths.wav", scene, function () {
+        }, {
+            loop:true,
+            volume: 0.1
+        });
+
+        this.end = new Sound("endSong", "./sounds/copycat(revised).mp3", scene, function () {
+        }, {
+            volume: 0.25
+        });
+    }
+    
+    //load the character model
+    private async _loadCharacterAssets(scene): Promise<any> {
+
+        async function loadCharacter() {
+            //collision mesh
+            const outer = MeshBuilder.CreateBox("outer", { width: 2, depth: 1, height: 3 }, scene);
+            outer.isVisible = false;
+            outer.isPickable = false;
+            outer.checkCollisions = true;
+
+            //move origin of box collider to the bottom of the mesh (to match player mesh)
+            outer.bakeTransformIntoVertices(Matrix.Translation(0, 1.5, 0))
+            //for collisions
+            outer.ellipsoid = new Vector3(1, 1.5, 1);
+            outer.ellipsoidOffset = new Vector3(0, 1.5, 0);
+
+            outer.rotationQuaternion = new Quaternion(0, 1, 0, 0); // rotate the player mesh 180 since we want to see the back of the player
+            
+            //--IMPORTING MESH--
+            return SceneLoader.ImportMeshAsync(null, "./models/", "player.glb", scene).then((result) =>{
+                const root = result.meshes[0];
+                //body is our actual player mesh
+                const body = root;
+                body.parent = outer;
+                body.isPickable = false;
+                body.getChildMeshes().forEach(m => {
+                    m.isPickable = false;
+                })
+                
+                //return the mesh and animations
+                return {
+                    mesh: outer as Mesh,
+                    animationGroups: result.animationGroups
+                }
+            });
+        }
+
+        return loadCharacter().then(assets => {
+            this.assets = assets;
+        });
+    }
+
     private async _goToGame(): Promise<void> { }
-    private async _setUpGame(): Promise<void> { }
     
     private _createCanvas(): HTMLCanvasElement {
 
