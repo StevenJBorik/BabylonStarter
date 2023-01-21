@@ -103,7 +103,7 @@ export class Environment {
 
         let env = result.meshes[0];
         let allMeshes = env.getChildMeshes();
-
+        
         //loads lantern mesh
         const res = await SceneLoader.ImportMeshAsync("", "./models/", "lantern.glb", this._scene);
 

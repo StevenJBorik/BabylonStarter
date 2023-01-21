@@ -64,10 +64,39 @@ class App {
         });
 
         // run the main render loop
+        // this._engine.runRenderLoop(() => {
+        //     this._scene.render();
+        // });
+    }
+
+    private async _main(): Promise<void> {
+        await this._goToStart();
+    
+        // Register a render loop to repeatedly render the scene
         this._engine.runRenderLoop(() => {
-            this._scene.render();
+            switch (this._state) {
+                case State.START:
+                    this._scene.render();
+                    break;
+                case State.CUTSCENE:
+                    this._scene.render();
+                    break;
+                case State.GAME:
+                    this._scene.render();
+                    break;
+                case State.LOSE:
+                    this._scene.render();
+                    break;
+                default: break;
+            }
+        });
+    
+        //resize if the screen is resized/rotated
+        window.addEventListener('resize', () => {
+            this._engine.resize();
         });
     }
+
 
     // The goTo functions are in charge of setting up the scene and consist of things that happen only once.
     // goToStart
